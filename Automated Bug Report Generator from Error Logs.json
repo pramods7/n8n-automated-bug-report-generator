@@ -1,0 +1,150 @@
+{
+  "name": "Automated Bug Report Generator from Error Logs",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Welcome to the Bug Report Generator! Paste your error log data below, and I'll create a structured bug report for you.",
+        "options": {
+          "inputPlaceholder": "Paste error log here..."
+        }
+      },
+      "id": "4155a389-6629-4472-9ca3-6d5913c1d18a",
+      "name": "Error Log Input",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        240,
+        272
+      ],
+      "webhookId": "1efcc3c7-7ff6-4173-b007-3f290e5b05f5"
+    },
+    {
+      "parameters": {
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a QA Engineer responsible for creating structured bug reports from error logs. Your task is to analyze the provided error log data and generate a comprehensive bug report with the following fields:\n\n- Title: A clear, concise summary of the issue\n- Severity: Critical, High, Medium, or Low\n- Steps to Reproduce: Detailed steps that led to the error\n- Expected Result: What should have happened\n- Actual Result: What actually happened (the error)\n- Additional Notes: Any relevant context or observations\n\nIMPORTANT CONSTRAINTS:\n- Use ONLY the log data provided in the input\n- Do NOT make assumptions or add information not present in the logs\n- If any field cannot be determined from the log data, mark it as [UNKNOWN]\n- Extract timestamps, error codes, stack traces, and other technical details when available\n- Be precise and factual"
+        }
+      },
+      "id": "2bb82209-6d2e-4ffe-9623-e4d01ce5309b",
+      "name": "Bug Report Generator",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        480,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "d845ee88-b9fd-4bef-b053-84900d4c5c6b",
+      "name": "Groq LLM",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        400,
+        448
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "6pOwJCOqJiJGTPIV",
+          "name": "Groq account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n\t\"type\": \"object\",\n\t\"properties\": {\n\t\t\"title\": {\n\t\t\t\"type\": \"string\",\n\t\t\t\"description\": \"Bug report title\"\n\t\t},\n\t\t\"severity\": {\n\t\t\t\"type\": \"string\",\n\t\t\t\"enum\": [\"Critical\", \"High\", \"Medium\", \"Low\"],\n\t\t\t\"description\": \"Severity level of the bug\"\n\t\t},\n\t\t\"stepsToReproduce\": {\n\t\t\t\"type\": \"string\",\n\t\t\t\"description\": \"Steps to reproduce the bug\"\n\t\t},\n\t\t\"expectedResult\": {\n\t\t\t\"type\": \"string\",\n\t\t\t\"description\": \"Expected behavior or result\"\n\t\t},\n\t\t\"actualResult\": {\n\t\t\t\"type\": \"string\",\n\t\t\t\"description\": \"Actual behavior or result observed\"\n\t\t},\n\t\t\"additionalNotes\": {\n\t\t\t\"type\": \"string\",\n\t\t\t\"description\": \"Additional notes or context\"\n\t\t}\n\t},\n\t\"required\": [\"title\", \"severity\", \"stepsToReproduce\", \"expectedResult\", \"actualResult\"]\n}"
+      },
+      "id": "86210c2f-c2a8-4582-a2cc-a236647d3bc5",
+      "name": "Structured Bug Report Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        720,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=🐛 **BUG REPORT GENERATED**\n\n**Title:** {{ $json.output.title }}\n**Severity:** {{ $json.output.severity }}\n\n**Steps to Reproduce:**\n{{ $json.output.stepsToReproduce }}\n\n**Expected Result:**\n{{ $json.output.expectedResult }}\n\n**Actual Result:**\n{{ $json.output.actualResult }}\n\n**Additional Notes:**\n{{ $json.output.additionalNotes }}",
+        "options": {}
+      },
+      "id": "e9af7939-2acd-424b-8f8d-b61cd52cafb2",
+      "name": "Send Bug Report",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        848,
+        272
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Error Log Input": {
+      "main": [
+        [
+          {
+            "node": "Bug Report Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Bug Report Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Bug Report Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Bug Report Generator",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bug Report Generator": {
+      "main": [
+        [
+          {
+            "node": "Send Bug Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "c05d4c18-29a3-4620-8fe7-7850619833a4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "46a825f95d80e8b1997f650ff652563e88bf2d9c31a4757a884c88fde2a5d378"
+  },
+  "id": "qvWlN5T0WfvHLwvt",
+  "tags": []
+}
